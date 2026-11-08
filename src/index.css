@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { min-height: 100%; }
+body { @apply bg-paper text-ink antialiased font-sans; font-variant-numeric: tabular-nums; }
+input, select, textarea { font-size: 16px; } /* evita zoom automático no iPhone */
+:focus-visible { outline: 3px solid #0E6B5C; outline-offset: 2px; }
