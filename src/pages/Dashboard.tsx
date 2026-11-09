@@ -26,7 +26,7 @@ export default function Dashboard() {
   const late = views.filter((v) => v.status === 'atrasado').sort((a, b) => a.daysToDue - b.daysToDue)
   const upcoming = views
     .filter((v) => v.status === 'hoje' || v.status === 'proximo')
-    .sort((a, b) => a.loan.due_date.localeCompare(b.loan.due_date))
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
     .slice(0, 5)
   const recent = payments.slice(0, 5)
   const loanById = new Map(views.map((v) => [v.loan.id, v]))

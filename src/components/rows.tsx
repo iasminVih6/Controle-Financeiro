@@ -8,9 +8,10 @@ import { Card, StatusBadge } from './ui'
 function dueText(v: LoanView): string {
   if (v.status === 'quitado') return 'Quitado'
   const d = v.daysToDue
-  if (d < 0) return `Venceu há ${-d} ${-d === 1 ? 'dia' : 'dias'} (${fmtDate(v.loan.due_date)})`
-  if (d === 0) return 'Vence hoje'
-  return `Vence em ${d} ${d === 1 ? 'dia' : 'dias'} (${fmtDate(v.loan.due_date)})`
+  const pre = v.parcelLabel ? `${v.parcelLabel} · ` : ''
+  if (d < 0) return `${pre}Venceu há ${-d} ${-d === 1 ? 'dia' : 'dias'} (${fmtDate(v.dueDate)})`
+  if (d === 0) return `${pre}Vence hoje`
+  return `${pre}Vence em ${d} ${d === 1 ? 'dia' : 'dias'} (${fmtDate(v.dueDate)})`
 }
 
 export function LoanRow({ v }: { v: LoanView }) {

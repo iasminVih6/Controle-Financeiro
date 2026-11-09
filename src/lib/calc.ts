@@ -1,12 +1,20 @@
-import type { Loan, Payment, Person } from './types'
+import type { Installment, Loan, Payment, Person } from './types'
 import { diffDays, monthKey, todayStr } from './dates'
 import { toCents } from './money'
 
 export type Status = 'quitado' | 'atrasado' | 'hoje' | 'proximo' | 'emdia'
 export const PROXIMO_DIAS = 7
 
+export type InstStatus = 'paga' | 'parcial' | 'aberta' | 'atrasada'
+export interface InstView { inst: Installment; amountC: number; coveredC: number; status: InstStatus }
+
 export interface LoanView {
   loan: Loan
+  insts: InstView[]
+  parcelLabel: string | null
+  dueDate: string // vencimento "efetivo": próxima parcela em aberto (ou o vencimento do empréstimo)
+  normalPaidC: number
+  interestPaidC: number
   personName: string
   payments: Payment[]
   capitalC: number
@@ -24,7 +32,7 @@ export interface LoanView {
   daysToDue: number
 }
 
-export function buildViews(loans: Loan[], people: Person[], payments: Payment[]): LoanView[] {
+export function buildViews(loans: Loan[], people: Person[], payments: Payment[], installments: Installment[] = []): LoanView[] {
   const names = new Map(people.map((p) => [p.id, p.name]))
   const byLoan = new Map<string, Payment[]>()
   for (const p of payments) {
@@ -32,17 +40,44 @@ export function buildViews(loans: Loan[], people: Person[], payments: Payment[])
     arr.push(p)
     byLoan.set(p.loan_id, arr)
   }
+  const instBy = new Map<string, Installment[]>()
+  for (const i of installments) {
+    const arr = instBy.get(i.loan_id) ?? []
+    arr.push(i)
+    instBy.set(i.loan_id, arr)
+  }
   const today = todayStr()
   return loans.map((loan) => {
     const pays = (byLoan.get(loan.id) ?? []).slice().sort((a, b) => b.paid_at.localeCompare(a.paid_at))
     const capitalC = toCents(loan.principal)
     const interestC = toCents(loan.interest_amount)
     const totalC = toCents(loan.total_amount)
-    const paidC = pays.reduce((s, p) => s + toCents(p.amount), 0)
-    const balanceC = Math.max(totalC - paidC, 0)
-    const capitalRecC = Math.min(paidC, capitalC)
-    const interestRecC = Math.min(Math.max(paidC - capitalC, 0), interestC)
-    const daysToDue = diffDays(today, loan.due_date)
+    // Pagamento "normal" abate o saldo; pagamento de "juros" não abate (o empréstimo é renovado).
+    const normalPaidC = pays.filter((p) => p.kind !== 'juros').reduce((s, p) => s + toCents(p.amount), 0)
+    const interestPaidC = pays.filter((p) => p.kind === 'juros').reduce((s, p) => s + toCents(p.amount), 0)
+    const paidC = normalPaidC + interestPaidC
+    const balanceC = Math.max(totalC - normalPaidC, 0)
+    const capitalRecC = Math.min(normalPaidC, capitalC)
+    // Regra: os pagamentos normais recuperam primeiro o CAPITAL; o que passar é juro.
+    const interestFromNormalC = Math.min(Math.max(normalPaidC - capitalC, 0), interestC)
+    const interestRecC = interestFromNormalC + interestPaidC
+    // Parcelas: os pagamentos normais quitam da parcela mais antiga para a mais nova.
+    let remaining = normalPaidC
+    const insts: InstView[] = (instBy.get(loan.id) ?? [])
+      .slice()
+      .sort((a, b) => a.number - b.number)
+      .map((inst) => {
+        const amountC = toCents(inst.amount)
+        const coveredC = Math.min(Math.max(remaining, 0), amountC)
+        remaining -= coveredC
+        let st: InstStatus = coveredC >= amountC ? 'paga' : coveredC > 0 ? 'parcial' : 'aberta'
+        if (st !== 'paga' && inst.due_date < today) st = 'atrasada'
+        return { inst, amountC, coveredC, status: st }
+      })
+    const nextOpen = insts.find((i) => i.status !== 'paga')
+    const dueDate = nextOpen ? nextOpen.inst.due_date : loan.due_date
+    const parcelLabel = nextOpen ? `Parcela ${nextOpen.inst.number}/${insts.length}` : null
+    const daysToDue = diffDays(today, dueDate)
     let status: Status
     if (balanceC <= 0) status = 'quitado'
     else if (daysToDue < 0) status = 'atrasado'
@@ -61,10 +96,15 @@ export function buildViews(loans: Loan[], people: Person[], payments: Payment[])
       capitalRecC,
       capitalOpenC: capitalC - capitalRecC,
       interestRecC,
-      interestOpenC: interestC - interestRecC,
+      interestOpenC: interestC - interestFromNormalC,
       status,
-      partial: paidC > 0 && balanceC > 0,
+      partial: normalPaidC > 0 && balanceC > 0,
       daysToDue,
+      insts,
+      parcelLabel,
+      dueDate,
+      normalPaidC,
+      interestPaidC,
     }
   })
 }

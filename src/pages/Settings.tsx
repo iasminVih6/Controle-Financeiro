@@ -9,7 +9,7 @@ import { Btn, Card, Field, inputCls, PageHeader, SectionTitle, useUI } from '../
 
 export default function Settings() {
   const { session, signOut } = useAuth()
-  const { people, loans, payments, views, refresh } = useData()
+  const { people, loans, payments, installments, views, refresh } = useData()
   const { toast, confirm } = useUI()
   const [pwd, setPwd] = useState('')
   const [pwd2, setPwd2] = useState('')
@@ -44,7 +44,7 @@ export default function Settings() {
       <SectionTitle>Backup e exportação</SectionTitle>
       <Card className="space-y-3">
         <p className="text-sm text-ink/70">Seus dados ficam guardados no banco de dados online. Baixe uma cópia de vez em quando para guardar no celular ou no computador.</p>
-        <Btn className="w-full" onClick={() => { exportBackup(people, loans, payments); toast('Backup completo baixado.') }}><Download size={18} /> Backup completo (.json)</Btn>
+        <Btn className="w-full" onClick={() => { exportBackup(people, loans, payments, installments); toast('Backup completo baixado.') }}><Download size={18} /> Backup completo (.json)</Btn>
         <div className="grid grid-cols-3 gap-2">
           <Btn variant="secondary" className="px-2 text-sm" onClick={() => exportPeople(people)}>Pessoas</Btn>
           <Btn variant="secondary" className="px-2 text-sm" onClick={() => exportLoans(views)}>Empréstimos</Btn>

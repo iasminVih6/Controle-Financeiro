@@ -38,7 +38,7 @@ export default function Payments() {
               <Link key={p.id} to={`/emprestimos/${p.loan_id}`} className="flex items-center justify-between px-4 py-3 active:bg-ink/5">
                 <div>
                   <p className="font-bold">{v?.personName ?? '—'}</p>
-                  <p className="text-sm text-ink/60">{fmtDate(p.paid_at)}{p.notes ? ` · ${p.notes}` : ''}</p>
+                  <p className="text-sm text-ink/60">{fmtDate(p.paid_at)}{p.kind === 'juros' ? ' · Só juros' : ''}{p.notes ? ` · ${p.notes}` : ''}</p>
                 </div>
                 <b className="text-pine">{fmt(toCents(p.amount))}</b>
               </Link>

@@ -29,3 +29,13 @@ export const lastMonths = (n: number): string[] => {
   }
   return out
 }
+
+// Soma n meses a uma data AAAA-MM-DD (dia 31 + 1 mês cai no último dia do mês seguinte).
+export const addMonths = (s: string, n: number): string => {
+  const [y, m, d] = s.slice(0, 10).split('-').map(Number)
+  const t = m - 1 + n
+  const yy = y + Math.floor(t / 12)
+  const mm = ((t % 12) + 12) % 12
+  const last = new Date(Date.UTC(yy, mm + 1, 0)).getUTCDate()
+  return `${yy}-${String(mm + 1).padStart(2, '0')}-${String(Math.min(d, last)).padStart(2, '0')}`
+}

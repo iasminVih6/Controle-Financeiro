@@ -28,3 +28,11 @@ export const interestCents = (principalC: number, rate: number): number =>
 export const num2 = (c: number): string => (c / 100).toFixed(2).replace('.', ',')
 
 export const centsToInput = (c: number): string => num2(c)
+
+// Divide o total em n parcelas iguais; a última absorve os centavos de diferença.
+export function splitInstallments(totalC: number, n: number): number[] {
+  const base = Math.floor(totalC / n)
+  const out = Array<number>(n).fill(base)
+  out[n - 1] = totalC - base * (n - 1)
+  return out
+}

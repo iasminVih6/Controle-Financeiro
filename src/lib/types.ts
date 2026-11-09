@@ -24,5 +24,13 @@ export interface Payment {
   amount: number
   paid_at: string
   notes: string | null
+  kind?: 'normal' | 'juros'
   created_at: string
+}
+export interface Installment {
+  id: string
+  loan_id: string
+  number: number
+  amount: number
+  due_date: string
 }

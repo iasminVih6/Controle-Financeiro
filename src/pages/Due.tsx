@@ -31,7 +31,7 @@ export default function Due() {
   const debtors = [...byPerson.values()].sort((a, b) => b.balance - a.balance)
   const pick = (s: Status): LoanView[] =>
     views.filter((v) => v.status === s).sort((a, b) =>
-      s === 'quitado' ? b.loan.due_date.localeCompare(a.loan.due_date) : a.loan.due_date.localeCompare(b.loan.due_date))
+      s === 'quitado' ? b.dueDate.localeCompare(a.dueDate) : a.dueDate.localeCompare(b.dueDate))
 
   return (
     <>

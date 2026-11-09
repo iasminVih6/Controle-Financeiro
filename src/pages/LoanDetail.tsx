@@ -25,7 +25,7 @@ export default function LoanDetail() {
 
   if (!v) return <Empty text="Empréstimo não encontrado." action={<Link to="/emprestimos"><Btn>Voltar</Btn></Link>} />
 
-  const pct = v.totalC ? Math.min(100, Math.round((v.paidC / v.totalC) * 100)) : 0
+  const pct = v.totalC ? Math.min(100, Math.round((v.normalPaidC / v.totalC) * 100)) : 0
 
   const removeLoan = async () => {
     if (v.payments.length > 0) {
@@ -56,7 +56,7 @@ export default function LoanDetail() {
       <div className="flex items-start justify-between gap-2">
         <div>
           <Link to={`/pessoas/${v.loan.person_id}`} className="text-2xl font-extrabold underline decoration-ink/20">{v.personName}</Link>
-          <p className="text-sm text-ink/60">Emprestado em {fmtDate(v.loan.loan_date)} · vence em {fmtDate(v.loan.due_date)}</p>
+          <p className="text-sm text-ink/60">Emprestado em {fmtDate(v.loan.loan_date)} · {v.insts.length > 0 ? `próx. parcela em ${fmtDate(v.dueDate)}` : `vence em ${fmtDate(v.dueDate)}`}</p>
         </div>
         <StatusBadge status={v.status} partial={v.partial} />
       </div>
@@ -71,6 +71,7 @@ export default function LoanDetail() {
         <Line label="Total a receber" value={fmt(v.totalC)} strong />
         <div className="my-2 border-t border-ink/10" />
         <Line label="Total recebido" value={fmt(v.paidC)} />
+        {v.interestPaidC > 0 && <Line label="  (juros pagos, não abatem o saldo)" value={fmt(v.interestPaidC)} />}
         <Line label="Saldo restante" value={fmt(v.balanceC)} strong />
       </Card>
 
@@ -86,7 +87,7 @@ export default function LoanDetail() {
           <p className="text-sm">Previsto: <b>{fmt(v.interestOpenC)}</b></p>
         </Card>
       </div>
-      <p className="mt-2 text-xs text-ink/55">Os pagamentos recuperam primeiro o capital; só depois entram como lucro.</p>
+      <p className="mt-2 text-xs text-ink/55">Os pagamentos recuperam primeiro o capital; só depois entram como lucro. Pagamento só de juros é lucro e não abate o saldo.</p>
       {v.loan.notes && <Card className="mt-3 text-[15px]"><span className="text-ink/60">Observações:</span> {v.loan.notes}</Card>}
 
       <div className="mt-4 grid grid-cols-3 gap-2">
@@ -95,6 +96,25 @@ export default function LoanDetail() {
         <Btn variant="secondary" className="text-brick" onClick={removeLoan}><Trash2 size={18} /> Excluir</Btn>
       </div>
 
+      {v.insts.length > 0 && (
+        <>
+          <SectionTitle>Parcelas</SectionTitle>
+          <Card className="divide-y divide-ink/10 !p-0">
+            {v.insts.map((i) => (
+              <div key={i.inst.id} className="flex items-center justify-between gap-2 px-4 py-3">
+                <div>
+                  <p className="font-bold">Parcela {i.inst.number}/{v.insts.length} · {fmt(i.amountC)}</p>
+                  <p className="text-sm text-ink/60">Vence em {fmtDate(i.inst.due_date)}{i.status === 'parcial' || (i.status === 'atrasada' && i.coveredC > 0) ? ` · pago ${fmt(i.coveredC)}` : ''}</p>
+                </div>
+                <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${i.status === 'paga' ? 'bg-pine-soft text-pine-dark' : i.status === 'atrasada' ? 'bg-brick-soft text-brick' : i.status === 'parcial' ? 'bg-gold-soft text-gold' : 'bg-ink/10 text-ink/70'}`}>
+                  {i.status === 'paga' ? 'Paga' : i.status === 'atrasada' ? 'Atrasada' : i.status === 'parcial' ? 'Parcial' : 'Em aberto'}
+                </span>
+              </div>
+            ))}
+          </Card>
+        </>
+      )}
+
       <SectionTitle>Histórico de pagamentos</SectionTitle>
       {v.payments.length === 0 ? <Empty text="Nenhum pagamento recebido ainda." /> : (
         <Card className="divide-y divide-ink/10 !p-0">
@@ -102,7 +122,7 @@ export default function LoanDetail() {
             <div key={p.id} className="flex items-center gap-2 px-4 py-3">
               <div className="min-w-0 flex-1">
                 <p className="font-bold text-pine">{fmt(toCents(p.amount))}</p>
-                <p className="text-sm text-ink/60">{fmtDate(p.paid_at)}{p.notes ? ` · ${p.notes}` : ''}</p>
+                <p className="text-sm text-ink/60">{fmtDate(p.paid_at)}{p.kind === 'juros' ? ' · Só juros' : ''}{p.notes ? ` · ${p.notes}` : ''}</p>
               </div>
               <button type="button" aria-label="Editar pagamento" className="flex h-11 w-11 items-center justify-center rounded-full active:bg-ink/10" onClick={() => setEditPay(p)}><Pencil size={18} /></button>
               <button type="button" aria-label="Excluir pagamento" className="flex h-11 w-11 items-center justify-center rounded-full text-brick active:bg-brick-soft" onClick={() => removePay(p)}><Trash2 size={18} /></button>
